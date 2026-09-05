@@ -58,6 +58,19 @@ Data yang digunakan dalam proyek ini dimuat dari file Dataset Kaggle yaitu [Anem
 #### Exploratory Data Analysis (EDA):
 Kondisi data secara statistik menunjukkan perbedaan rentang angka yang cukup mencolok. Fitur seperti ukuran trombosit (PLT) memiliki skala nilai ratusan, sementara tingkat limfosit (LYMn) berada pada rentang nilai desimal satu digit. Selain itu, dataset ini menujukkan sebaran kelas yang imbalanced (Normocytic hypochromic anemia paling dominan). Observasi ini menjadi fundamental penting untuk tahapan transformasi (seperti penormalan skala) di tahap preparation.
 
+<p align="center">
+    <img width="783" height="463" alt="image" src="https://github.com/user-attachments/assets/74274843-f805-46da-9d0c-f9ca352d5096" />
+</p>
+
+Berdasarkan visualisasi grafik batang di atas, terlihat jelas bahwa *dataset* yang digunakan memiliki **distribusi kelas target (diagnosis) yang sangat tidak seimbang (*highly imbalanced dataset*)**. Ketimpangan ini terbagi menjadi beberapa kelompok:
+
+- **Kelas Mayoritas:** Data didominasi oleh pasien dengan kondisi ***Healthy*** (sekitar 340 sampel), yang diikuti secara berturut-turut oleh diagnosis ***Normocytic hypochromic anemia*** (sekitar 280 sampel) dan ***Normocytic normochromic anemia*** (sekitar 270 sampel).
+- **Kelas Menengah:** Diagnosis ***Iron deficiency anemia*** berada pada porsi menengah dengan observasi sampel yang menyentuh angka 200.
+- **Kelas Minoritas:** Kasus kelainan darah yang lebih spesifik dan langka seperti ***Leukemia***, ***Macrocytic anemia***, hingga ***Leukemia with thrombocytopenia*** memiliki jumlah rekaman yang sangat minim (seluruhnya di bawah batas 50 sampel).
+
+**Dampak Pemodelan:** 
+Kondisi ekstrem antara kelas dominan dan minoritas ini memicu risiko bias algoritma yang tinggi. Secara alamiah, model *machine learning* akan mengutamakan akurasi mayoritas sehingga cenderung pandai memprediksi pasien yang "*Healthy*" atau anemia umum, namun seringkali gagal atau keliru (*False Negative*) dalam mengenali penyakit kritis (seperti *Leukemia*) karena keterbatasan data latih. Oleh karena itu, pendekatan evaluasi khusus sangat diperlukan, seperti penggunaan metrik **F1-Score (Macro Average)** untuk memantau keseimbangan presisi dan *recall* seluruh diagnosis secara adil.
+
 ## Data Preparation
 Berikut adalah teknik-teknik data preparation yang diimplementasikan secara berurutan:
 
@@ -80,14 +93,14 @@ Berikut adalah teknik-teknik data preparation yang diimplementasikan secara beru
 ## Modeling
 Untuk menangani kasus multi-klasifikasi ini, dua jenis algoritma dilatih dan dibandingkan.
 
-1. Random Forest Classifier
+1. **Random Forest Classifier**
     - Parameter: Melalui hyperparameter tuning, pencarian kombinasi parameter dilakukan secara komprehensif pada penyesuaian jumlah pohon (n_estimators), kriteria gini atau entropy, serta maksimum batasan kedalaman simpul (max_depth).
 
     - Kelebihan: Algoritma ensemble ini sangat kokoh dan kebal terhadap titik-titik nilai ekstrim (outliers). Selain itu, sangat cakap menemukan batasan fungsi yang tidak linear dan jarang terkena overfitting.
 
     - Kekurangan: Model final cukup berat/lambat dikompilasi dibandingkan decision tree biasa.
 
-2. Support Vector Machine (SVM)
+2. **Support Vector Machine (SVM)**
     - Parameter: Secara spesifik di-tuning pada nilai regularisasi C dan jenis kernel (seperti linear, poly, rbf).
 
     - Kelebihan: Fleksibel mengatasi data tidak linear dengan kernel trick, bekerja efisien terhadap fitur yang berdimensi banyak sekalipun memori latih terbatas.
@@ -95,21 +108,31 @@ Untuk menangani kasus multi-klasifikasi ini, dua jenis algoritma dilatih dan dib
     - Kekurangan: Pemilihan parameter fungsi kernel yang salah akan membuat algoritma kesulitan untuk beradaptasi, serta sangat rentan pada noise jika batas tepian parameter hiperplan C tidak ditata ulang.
 
 #### Solusi Model Terbaik
-> Model Random Forest dipilih sebagai penyelesaian terbaik (Best Model). Alasannya ditekankan pada bentuk alamiah dari jumlah observasi dataset. Dataset CBC seringkali tidak linear dan cukup kotor. Pendekatan gabungan dari banyak 'pohon penentu' pada Random Forest menyeimbangkan bias-variance jauh lebih solid dalam mengklasifikasikan kelas minor (seperti Leukemia atau pasien Healthy) daripada algoritma SVM yang akan kesulitan merangkum margin klasifikasi karena distribusinya tidak merata (imbalanced).
+> Model **Random Forest** dipilih sebagai penyelesaian terbaik (Best Model). Alasannya ditekankan pada bentuk alamiah dari jumlah observasi dataset. Dataset CBC seringkali tidak linear dan cukup kotor. Pendekatan gabungan dari banyak 'pohon penentu' pada Random Forest menyeimbangkan bias-variance jauh lebih solid dalam mengklasifikasikan kelas minor (seperti Leukemia atau pasien Healthy) daripada algoritma SVM yang akan kesulitan merangkum margin klasifikasi karena distribusinya tidak merata (imbalanced).
 
 ## Evaluation
 Proyek ini mengimplementasikan pemodelan kelas banyak (Multi-class Classification). Pada problem layanan kesehatan (healthcare), model tidak boleh hanya mempedulikan akurasi belaka, namun juga harus peduli pada rasio kesalahan prediksinya. Metrik yang digunakan adalah Akurasi, Precision, Recall, dan F1-Score.
 
 #### Penjelasan Metrik:
 
-- Akurasi (Accuracy): Mengukur persentase tebakan klasifikasi diagnosis (baik sehat maupun kelainan darah) yang seutuhnya benar terhadap keseluruhan populasi sampel uji. Secara formula dituliskan (TP + TN) / (TP + TN + FP + FN).
+- **Akurasi (Accuracy):** Mengukur persentase tebakan klasifikasi diagnosis (baik sehat maupun kelainan darah) yang seutuhnya benar terhadap keseluruhan populasi sampel uji. Secara formula dituliskan (TP + TN) / (TP + TN + FP + FN).
 
-- Presisi (Precision): Proporsi ketepatan positif aktual dibandingkan keseluruhan hasil prediksi berstatus positif dari algoritma. Metrik ini meminimalisasi klaim pasien sehat yang salah didiagnosa sakit. (Formula: TP / (TP + FP)).
+- **Presisi (Precision):** Proporsi ketepatan positif aktual dibandingkan keseluruhan hasil prediksi berstatus positif dari algoritma. Metrik ini meminimalisasi klaim pasien sehat yang salah didiagnosa sakit. (Formula: TP / (TP + FP)).
 
-- Recall (Sensitivity): Proporsi pasien yang sebetulnya menderita kelainan darah dan berhasil terdeteksi dengan benar. Recall bernilai vital untuk menekan False Negative (pasien sesungguhnya berpenyakit, tapi model memprediksi mereka "sehat"). (Formula: TP / (TP + FN)).
+- **Recall (Sensitivity):** Proporsi pasien yang sebetulnya menderita kelainan darah dan berhasil terdeteksi dengan benar. Recall bernilai vital untuk menekan False Negative (pasien sesungguhnya berpenyakit, tapi model memprediksi mereka "sehat"). (Formula: TP / (TP + FN)).
 
-- F1-Score: Adalah rata-rata harmonik (keseimbangan mutlak) antara Precision dan Recall. Metrik ini dipakai sebagai rujukan inti berhubung dataset kasus penyakit sering bersifat imbalanced. (Formula: 2 * ((Precision * Recall) / (Precision + Recall))).
+- **F1-Score:** Adalah rata-rata harmonik (keseimbangan mutlak) antara Precision dan Recall. Metrik ini dipakai sebagai rujukan inti berhubung dataset kasus penyakit sering bersifat imbalanced. (Formula: 2 * ((Precision * Recall) / (Precision + Recall))).
 (Catatan: TP = True Positive, TN = True Negative, FP = False Positive, FN = False Negative)
+
+<p align="center">
+    <img width="851" height="419" alt="image" src="https://github.com/user-attachments/assets/f73fc161-af23-41e8-a21d-1314eeee4495" />
+</p>
+
+Berdasarkan hasil pengujian metrik evaluasi makro, model Random Forest secara konsisten mengungguli Support Vector Machine (SVM) di seluruh parameter dan ditetapkan sebagai model terbaik untuk klasifikasi diagnosis penyakit ini.
+
+1. **Random Forest (Best Model):** Berhasil mencapai tingkat akurasi nyaris sempurna di angka 99% (0.99). Menghadapi kondisi dataset yang sangat tidak seimbang (imbalanced), algoritma ini tetap menunjukkan performa generalisasi yang tangguh. Hal ini dibuktikan dengan capaian Precision 85% (0.85), Recall 89% (0.89), dan F1-Score 87% (0.87). Tingginya nilai Recall sangat krusial dalam konteks medis karena memastikan model memiliki sensitivitas yang sangat baik dalam mendeteksi pasien yang benar-benar sakit (meminimalkan False Negative).
+
+2. **Support Vector Machine (SVM):** Menunjukkan performa yang tertinggal dengan akurasi 89% (0.89). Kesulitan algoritma ini dalam memetakan batasan data yang imbalanced terlihat jelas pada metrik Recall yang hanya menyentuh 80% (0.80) dan F1-Score 78% (0.78). Angka ini mengindikasikan bahwa model SVM lebih sering gagal atau keliru dalam mengenali kelas diagnosis minoritas (seperti Leukemia) dibandingkan dengan Random Forest.
 
 ### Kesimpulan Evaluasi
 Proses hyperparameter tuning memastikan kinerja parameter ideal bagi model Random Forest. Berbasiskan hasil evaluasinya (secara konseptual), sistem meraih tingkatan metrik pengujian makro dengan titik di atas >85%. Yang paling ditekankan adalah hasil metrik Recall yang sangat solid karena model amat dianjurkan untuk tak menormalisasi tebakan positif palsu dan gagal mendeteksi pasien yang anemia. Hasil akhir evaluasi ini memenuhi tuntutan seluruh problem statements di awal; bahwa algoritma Random Forest sanggup bertindak sebagai basis machine learning pendeteksi pasien berisiko hanya berdasar data Complete Blood Count (CBC).
