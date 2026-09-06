@@ -50,7 +50,33 @@ print(df.isnull().sum())
 """**Interpretasi:**
 Tidak ditemukan nilai yang hilang (*missing values*) pada fitur manapun. Hal ini menandakan data cukup bersih dan siap untuk diproses lebih lanjut tanpa perlu melakukan imputasi.
 
-### 5. Visualisasi Distribusi Diagnosis
+### 5. Pemeriksaan Data Duplikat
+Memastikan tidak ada data yang duplikat agar tidak menghambat proses pemodelan dan menjaga kualitas hasil analisis.
+"""
+
+print("\nJumlah baris duplikat:", df.duplicated().sum())
+if df.duplicated().sum() > 0:
+    print("\nBaris duplikat (tampilan 5 baris pertama jika ada):")
+    print(df[df.duplicated()].head())
+
+"""### Interpretasi Pemeriksaan Duplikat
+Hasil menunjukkan bahwa terdapat **49 baris duplikat** di dalam dataset. Baris duplikat ini, seperti yang terlihat pada `df[df.duplicated()].head()`, adalah entri yang persis sama di semua kolom. Duplikasi data dapat menyebabkan bias dalam pelatihan model dan evaluasi performa yang tidak akurat, sehingga perlu ditangani.
+
+### 6. Penanganan Data Duplikat
+Untuk mengatasi masalah duplikasi, kita akan menghapus semua baris duplikat dan menjaga hanya satu instans dari setiap entri unik. Ini akan memastikan bahwa setiap observasi dalam dataset adalah unik.
+"""
+
+print(f"Jumlah baris sebelum menghapus duplikat: {df.shape[0]}")
+
+df_cleaned = df.drop_duplicates().copy()
+
+print(f"Jumlah baris setelah menghapus duplikat: {df_cleaned.shape[0]}")
+
+df = df_cleaned
+
+"""**Intepretasi:** Setelah menghapus baris duplikat, jumlah observasi dalam dataset berkurang dari 1281 menjadi 1232. Ini mengonfirmasi bahwa 49 baris duplikat telah berhasil dihapus, menghasilkan dataset yang lebih bersih dan unik untuk proses analisis dan pemodelan selanjutnya. `df` sekarang telah diperbarui dengan data yang sudah bersih.
+
+### 7. Visualisasi Distribusi Diagnosis
 Menampilkan grafik batang untuk melihat seberapa seimbang jumlah sampel pada masing-masing kategori diagnosis.
 """
 
@@ -66,7 +92,7 @@ plt.show()
 """**Interpretasi:**
 Visualisasi ini mempertegas adanya ketidakseimbangan data. Kelas 'Healthy', 'Normocytic hypochromic anemia', dan 'Normocytic normochromic anemia' mendominasi dataset, sementara 'Macrocytic anemia' dan 'Leukemia with thrombocytopenia' memiliki representasi yang sangat sedikit. Hal ini mengindikasikan bahwa model mungkin akan lebih mahir mengenali kelas mayoritas.
 
-### 6. Analisis Outlier dengan Boxplot
+### 8. Analisis Outlier dengan Boxplot
 Visualisasi distribusi fitur numerik untuk mendeteksi adanya pencilan (outlier) sebelum dilakukan standarisasi.
 """
 
@@ -82,27 +108,27 @@ plt.show()
 """**Interpretasi:**
 Berdasarkan boxplot, terdapat perbedaan skala yang signifikan antar fitur (misalnya, fitur PLT memiliki rentang nilai yang jauh lebih besar daripada RBC). Selain itu, beberapa fitur menunjukkan adanya *outlier*. Oleh karena itu, standarisasi fitur menjadi langkah krusial sebelum masuk ke tahap pemodelan.
 
-### 7. Pemisahan Fitur dan Target
+### 9. Pemisahan Fitur dan Target
 Memisahkan variabel independen (X) yang berisi hasil tes laboratorium dan variabel dependen (y) yaitu Diagnosis.
 """
 
 X = df.drop(columns=['Diagnosis'])
 y = df['Diagnosis']
 
-"""### 8. Encoding Label
+"""### 10. Encoding Label
 Mengubah label kategori diagnosis menjadi bentuk numerik agar dapat diproses oleh algoritma machine learning.
 """
 
 label_encoder = LabelEncoder()
 y_encoded = label_encoder.fit_transform(y)
 
-"""### 9. Pembagian Data (Train-Test Split)
+"""### 11. Pembagian Data (Train-Test Split)
 Membagi dataset menjadi data latih (80%) dan data uji (20%) untuk mengevaluasi performa model nantinya.
 """
 
 X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, test_size=0.2, random_state=42)
 
-"""### 10. Standarisasi Fitur
+"""### 12. Standarisasi Fitur
 Mengubah skala fitur numerik agar memiliki mean 0 dan standar deviasi 1 menggunakan `StandardScaler`.
 """
 
@@ -111,7 +137,7 @@ X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 print("Data berhasil di-split dan distandarisasi.\n")
 
-"""### 11. Hyperparameter Tuning: Random Forest
+"""### 13. Hyperparameter Tuning: Random Forest
 Mencari parameter terbaik untuk model Random Forest menggunakan metode `GridSearchCV`.
 """
 
@@ -126,7 +152,7 @@ rf_grid = GridSearchCV(rf_model, rf_params, cv=2, scoring='accuracy', n_jobs=-1)
 rf_grid.fit(X_train_scaled, y_train)
 best_rf = rf_grid.best_estimator_
 
-"""### 12. Hyperparameter Tuning: SVM
+"""### 14. Hyperparameter Tuning: SVM
 Melakukan tuning parameter untuk model Support Vector Machine (SVM) dengan berbagai kernel dan nilai C.
 """
 
@@ -140,7 +166,7 @@ svm_grid = GridSearchCV(svm_model, svm_params, cv=2, scoring='accuracy', n_jobs=
 svm_grid.fit(X_train_scaled, y_train)
 best_svm = svm_grid.best_estimator_
 
-"""### 13. Menampilkan Parameter Terbaik
+"""### 15. Menampilkan Parameter Terbaik
 Menampilkan kombinasi parameter optimal yang ditemukan oleh GridSearchCV untuk kedua model.
 """
 
@@ -150,7 +176,7 @@ print(f"Parameter Terbaik SVM : {svm_grid.best_params_}\n")
 """**Interpretasi:**
 Hasil tuning menunjukkan bahwa Random Forest bekerja optimal dengan 100 pohon (`n_estimators`) dan kriteria `entropy`. Sementara itu, SVM memberikan hasil terbaik dengan kernel `linear` dan nilai `C=100`, yang menunjukkan bahwa data ini mungkin memiliki batas pemisah linear yang cukup kuat setelah dilakukan standarisasi.
 
-### 14. Evaluasi Model
+### 16. Evaluasi Model
 Membuat fungsi untuk menghitung metrik performa (Akurasi, Presisi, Recall, F1-Score) dan membandingkan hasil RF dengan SVM.
 """
 
@@ -175,7 +201,7 @@ svm_metrics = evaluate_model(best_svm, X_test_scaled, y_test, "Support Vector Ma
 """**Interpretasi:**
 Model Random Forest menunjukkan performa yang sangat unggul dengan Akurasi mencapai 0.99 dibandingkan SVM (0.89). Random Forest juga memiliki skor F1 yang lebih stabil, yang menandakan kemampuan model dalam menangani ketidakseimbangan kelas dengan lebih baik daripada SVM pada dataset ini.
 
-### 15. Laporan Klasifikasi Rinci
+### 17. Laporan Klasifikasi Rinci
 Menampilkan laporan klasifikasi mendetail per kategori untuk melihat performa model Random Forest secara lebih spesifik.
 """
 
